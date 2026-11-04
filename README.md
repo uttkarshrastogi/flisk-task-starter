@@ -10,7 +10,7 @@ Needs Node.js 22.12+, Docker (running) and Tilt.
 npx @flisk-sh/flisk up
 ```
 
-The first start builds every image (about 2 minutes on an M-series Mac, most of it the .NET SDK). It prints `Flisk is up.` once all services are healthy.
+It prints `Flisk is up.` once all services are healthy. Measured on an M-series Mac: about 2 min 10 s from a fresh clone with an empty Docker (no images, build cache or volumes), about 25 s once images are cached.
 
 | What | URL |
 |------|-----|
@@ -64,6 +64,7 @@ All five services were healthy on the first `flisk up` with no edits to the gene
 - **`build.target: dev` was dropped silently.** Compose builds `vote` from the `dev` stage (Flask with reload); Flisk builds the default `final` stage (gunicorn). It works, but the behaviour changed with no note in the import output.
 - **Import is interactive by default.** Without a TTY it asks `(Y/n)`, writes nothing, and exits 0. A coding agent or CI job would read that as success. `--yes` works, but neither the dry run nor its "Next" hints mention it.
 - **A plain Compose app gets platform defaults it does not use.** `flisk up` added `DB_PASSWORD` and `JWT_SECRET` to `.env`, planned 16 entities (Infisical, NATS, golden layers) for five services, and printed a "Verdaccio requires a Premium license" line on a free run.
+- **The first run builds images this app never uses.** On a cold start Flisk built eight "golden layer" images (`flisk-task-starter-l1` to `-l4-*`, listed sizes adding up to about 2.3 GB) although `.flisk/project.json` has `"golden_image": false` and every service here builds from its own Dockerfile. That is time and disk spent on every first run, and it is why the build cache reached about 6 GB for a five-service app.
 - **`flisk doctor` fails on the machine, not the project.** Right after a healthy start it ended with `Doctor failed` and `docker system prune -af` as the first fix, because the disk was low (about 6 GB of images and build cache from this app). The check is real, but a destructive prune as the headline fix on a working stack is alarming.
 - **Two backends in one stack share no route.** `doctor` warns that `vote` and `result` lose the shared `/api/flisk-task-starter-management` route. Harmless here, confusing on a first run.
 
