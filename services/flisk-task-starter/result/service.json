@@ -1,0 +1,25 @@
+{
+  "$schema": "https://flisk.sh/schema.service.json",
+  "schemaVersion": 1,
+  "appName": "result",
+  "appType": "bring-your-own",
+  "stack": "flisk-task-starter",
+  "port": 80,
+  "healthCheckPath": "/",
+  "buildContext": "../../../result",
+  "dockerfile": "Dockerfile",
+  "dependsOn": [
+    "db"
+  ],
+  "extraPorts": [
+    {
+      "port": 9229
+    }
+  ],
+  "volumes": [
+    {
+      "source": "../../../result",
+      "target": "/usr/local/app"
+    }
+  ]
+}

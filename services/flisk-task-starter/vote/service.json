@@ -1,0 +1,30 @@
+{
+  "$schema": "https://flisk.sh/schema.service.json",
+  "schemaVersion": 1,
+  "appName": "vote",
+  "appType": "bring-your-own",
+  "stack": "flisk-task-starter",
+  "port": 80,
+  "healthCheckPath": "/",
+  "healthCheck": {
+    "command": [
+      "curl",
+      "-f",
+      "http://localhost"
+    ],
+    "interval": 15,
+    "timeout": 5,
+    "retries": 3
+  },
+  "buildContext": "../../../vote",
+  "dockerfile": "Dockerfile",
+  "dependsOn": [
+    "redis"
+  ],
+  "volumes": [
+    {
+      "source": "../../../vote",
+      "target": "/usr/local/app"
+    }
+  ]
+}

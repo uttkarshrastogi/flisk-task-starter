@@ -1,4 +1,6 @@
 var express = require('express'),
+    fs = require('fs'),
+    path = require('path'),
     async = require('async'),
     { Pool } = require('pg'),
     cookieParser = require('cookie-parser'),
@@ -65,11 +67,19 @@ function collectVotesFromResult(result) {
 
 app.use(cookieParser());
 app.use(express.urlencoded());
-app.use(express.static(__dirname + '/views'));
+// Behind a path-prefix proxy (Flisk/Traefik serves this app at /api/result) the proxy
+// strips the prefix and sends it as X-Forwarded-Prefix. A <base> tag built from it makes
+// the page's relative asset links resolve with or without a trailing slash.
+// Without the header (plain docker compose) it stays "/".
+var indexHtml = fs.readFileSync(path.resolve(__dirname + '/views/index.html'), 'utf8');
 
 app.get('/', function (req, res) {
-  res.sendFile(path.resolve(__dirname + '/views/index.html'));
+  var prefix = req.get('X-Forwarded-Prefix') || '';
+  if (!/^(\/[A-Za-z0-9._-]+)*$/.test(prefix)) prefix = '';
+  res.type('html').send(indexHtml.replace('<head>', '<head>\n    <base href="' + prefix + '/">'));
 });
+
+app.use(express.static(__dirname + '/views', { index: false }));
 
 server.listen(port, function () {
   var port = server.address().port;

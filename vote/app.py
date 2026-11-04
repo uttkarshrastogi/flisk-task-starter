@@ -5,6 +5,7 @@ import socket
 import random
 import json
 import logging
+import re
 
 option_a = os.getenv('OPTION_A', "Cats")
 option_b = os.getenv('OPTION_B', "Dogs")
@@ -15,6 +16,16 @@ app = Flask(__name__)
 gunicorn_error_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers.extend(gunicorn_error_logger.handlers)
 app.logger.setLevel(logging.INFO)
+
+def base_href():
+    # Behind a path-prefix proxy (Flisk/Traefik serves this app at /api/vote) the
+    # proxy strips the prefix and sends it as X-Forwarded-Prefix. A <base> tag built
+    # from it makes the relative form action and asset links resolve with or without
+    # a trailing slash. Without the header (plain docker compose) it stays "/".
+    prefix = request.headers.get('X-Forwarded-Prefix', '')
+    if not re.fullmatch(r'(/[A-Za-z0-9._-]+)*', prefix):
+        prefix = ''
+    return prefix + '/'
 
 def get_redis():
     if not hasattr(g, 'redis'):
@@ -42,6 +53,7 @@ def hello():
         option_b=option_b,
         hostname=hostname,
         vote=vote,
+        base_href=base_href(),
     ))
     resp.set_cookie('voter_id', voter_id)
     return resp
